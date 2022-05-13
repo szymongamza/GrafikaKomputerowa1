@@ -100,7 +100,7 @@ int main()
     glDeleteShader(fragmentShader);
 
     //Green rect
-    const GLint numberOfVert = numberOfTriangles + 1;
+    const GLint numberOfVert = numberOfTriangles + 2;
     GLfloat twoTimesPI = 2.0f * 3.1415f;
 
 
@@ -113,7 +113,7 @@ int main()
     allVertTogether[1] = 0;
     allVertTogether[2] = 0;
 
-    for (int i = 0; i < numberOfVert; i++) {
+    for (int i = 1; i < numberOfVert; i++) {
         allVertTogether[i * 3] = allVertTogether[0] + (radius * cos(i * twoTimesPI / numberOfTriangles));;
         allVertTogether[(i * 3)+1] = allVertTogether[0] + (radius * sin(i * twoTimesPI / numberOfTriangles));
         allVertTogether[(i * 3)+2] = allVertTogether[0];
@@ -123,13 +123,12 @@ int main()
 
     //INDICIES
     GLuint circleIndicies[numberOfTriangles*3];
-        circleIndicies[0] = 0;
-        circleIndicies[1] = 2;
-        circleIndicies[2] = 1;
-    for (int i = 0; i < numberOfTriangles * 3; i++) {
+
+
+    for (int i = 0; i < numberOfTriangles; i++) {
         circleIndicies[i * 3] = 0;
-        circleIndicies[(i * 3) + 1] = i + 2;
-        circleIndicies[(i * 3) + 2] = i + 1;
+        circleIndicies[(i * 3) + 1] = i + 1;
+        circleIndicies[(i * 3) + 2] = i + 2;
     }
 
 
