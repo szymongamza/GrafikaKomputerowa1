@@ -28,7 +28,7 @@ const GLchar* fragmentShaderSource =
 "in vec2 vertexTexture;\n"
 "out vec4 fragmentColor;\n"
 "uniform sampler2D uTexture;\n"
-"uniform float textureMix = 0.1f; \n"
+"uniform float textureMix = 0.05f; \n"
 "void main()\n"
 "{\n"
 "    fragmentColor = mix(texture(uTexture, vertexTexture), vec4(0.0, 0.0, 1.0, 1.0), textureMix);\n"
@@ -151,11 +151,12 @@ int main()
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     GLfloat verticesRec[] = {
-       // pozycja                  kolory           tekstura
+       
         -0.6f,  0.5f, 0.0f,     0.0f, 0.0f, 0.0f,   0.0f, 1.0f, 
         -0.2f,  0.2f, 0.0f,     0.0f, 0.0f, 0.0f,   1.0f, 0.0f, 
         -0.6f,  0.2f, 0.0f,     0.0f, 0.0f, 0.0f,   0.0f, 0.0f, 
@@ -163,12 +164,12 @@ int main()
     };
 
     GLuint indicesRec[] = {
-        0, 1, 2,    // triangle 1
-        0, 3, 1     // triangle 2
+        0, 1, 2,   
+        0, 3, 1    
     };
 
     GLfloat verticesTria[] = {
-        // pozycja                  kolory           tekstura
+       
         0.5f,   0.0f, 0.0f,     0.0f, 0.0f, 0.0f,   0.0f, 1.0f, 
         0.2f,  -0.3f, 0.0f,     0.0f, 0.0f, 0.0f,   1.0f, 0.0f, 
         0.8f,  -0.3f, 0.0f,     0.0f, 0.0f, 0.0f,   0.0f, 0.0f, 
@@ -235,7 +236,7 @@ int main()
     glfwSetKeyCallback(window, keyboardCallback);
     glfwSetScrollCallback(window, scrollCallback);
 
-    // p�tla zdarze�
+    // petla
     while (!glfwWindowShouldClose(window))
     {
         // renderowanie

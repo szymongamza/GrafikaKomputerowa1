@@ -35,11 +35,11 @@ const GLchar* fragmentShaderSource =
 void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
-float pitch = 0.0f; 
+float pitch = 0.0f;
 float yaw = -90.0f;
 const unsigned int window_width = 1000;
 const unsigned int window_height = 1000;
-float previousX = static_cast<float>(window_width) / 2.0f; 
+float previousX = static_cast<float>(window_width) / 2.0f;
 float previousY = static_cast<float>(window_height) / 2.0f;
 bool first_window_enter = true;
 
@@ -47,7 +47,8 @@ glm::vec3 cameraPosition = glm::vec3(0.0f, 0.0f, 2.5f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
-
+float deltaTime = 0.0f;
+float previousTime = 0.0f;
 
 
 int main()
@@ -143,27 +144,27 @@ int main()
     -0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 0.0f,
     -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
      0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f,
-     0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 
+     0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 1.0f,
 
     -0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 0.0f,
     -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f,
      0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 
+     0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f,
 
      0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 0.0f,
      0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
      0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 
+     0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f,
 
     -0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 0.0f,
     -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
     -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 
+    -0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f,
 
     -0.5f, 0.5f,  0.5f, 1.0f, 1.0f, 0.0f,
     -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
      0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 1.0f,
-     0.5f, 0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 
+     0.5f, 0.5f,  0.5f, 1.0f, 1.0f, 1.0f,
 
     -0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 0.0f,
     -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
@@ -214,6 +215,9 @@ int main()
     glfwSetKeyCallback(window, keyboardCallback);
     glfwSetCursorPosCallback(window, mouseCallback);
 
+
+    glfwSetTime(0.0);
+    
     // pêtla zdarzeñ
     while (!glfwWindowShouldClose(window))
     {
@@ -221,27 +225,27 @@ int main()
         glClearColor(0.066f, 0.09f, 0.07f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 model = glm::mat4(1.0f); 
+        glm::mat4 model = glm::mat4(1.0f);
 
-        GLint modelLoc = glGetUniformLocation(shaderProgram, "model"); 
+        GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
 
         glm::mat4 view = glm::lookAt(cameraPosition, cameraPosition + cameraFront, cameraUp);
 
-        GLint viewLoc = glGetUniformLocation(shaderProgram, "view"); 
+        GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 
 
-        glm::vec3 cameraFront_new; 
-        cameraFront_new.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch)); 
-        cameraFront_new.y = sin(glm::radians(pitch)); 
-        cameraFront_new.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch)); 
+        glm::vec3 cameraFront_new;
+        cameraFront_new.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+        cameraFront_new.y = sin(glm::radians(pitch));
+        cameraFront_new.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
         cameraFront = glm::normalize(cameraFront_new);
 
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), static_cast<float>(window_width) / static_cast<float>(window_height), 0.1f, 100.0f);
 
-        GLint projectionLoc = glGetUniformLocation(shaderProgram, "projection"); 
+        GLint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
         glUseProgram(shaderProgram);
@@ -250,9 +254,15 @@ int main()
         glBindVertexArray(0);
 
         //
-        
+
         glfwSwapBuffers(window);
+        glfwSwapInterval(0);
         glfwPollEvents();
+        float currentTime = glfwGetTime();
+        deltaTime = currentTime - previousTime;
+        previousTime = currentTime;
+
+
     }
 
     glDeleteVertexArrays(1, &VAO);
@@ -265,31 +275,31 @@ int main()
 }
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
-    if (first_window_enter) { 
-        previousX = xpos; previousY = ypos; 
-        first_window_enter = false; 
+    if (first_window_enter) {
+        previousX = xpos; previousY = ypos;
+        first_window_enter = false;
     }
 
-    float xdifference = xpos - previousX; 
+    float xdifference = xpos - previousX;
     float ydifference = previousY - ypos;
-    previousX = xpos; 
+    previousX = xpos;
     previousY = ypos;
-    const float sensitivity = 0.075f; 
-    xdifference *= sensitivity; 
+    const float sensitivity = 0.075f;
+    xdifference *= sensitivity;
     ydifference *= sensitivity;
     pitch += ydifference;
     yaw += xdifference;
-    if (pitch > 89.0f) 
-        pitch = 89.0f; 
-    if (pitch < -89.0f) 
+    if (pitch > 89.0f)
+        pitch = 89.0f;
+    if (pitch < -89.0f)
         pitch = -89.0f;
 }
 
 void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    const float cameraSpeed = 0.05f; 
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) cameraPosition += cameraSpeed * cameraFront; 
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) cameraPosition -= cameraSpeed * cameraFront; 
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) cameraPosition -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed; 
+    const float cameraSpeed = 50.0f * deltaTime;
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) cameraPosition += cameraSpeed * cameraFront;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) cameraPosition -= cameraSpeed * cameraFront;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) cameraPosition -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) cameraPosition += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
 }

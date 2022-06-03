@@ -13,10 +13,11 @@ const char* vertexShaderSource = "#version 330 core\n"
 "{\n"
 "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
 "}\0";
+
 //Fragment Shader source code
 const char* fragmentShaderSource = "#version 330 core\n"
 "out vec4 FragColor;\n"
-"uniform vec3 uColor = vec3(0.5f, 0.2f, 0.7f);\n"
+"uniform vec3 uColor = vec3(0.3f, 0.4f, 0.5f);\n"
 "void main()\n"
 "{\n"
 "   FragColor = vec4(uColor, 1.0f);\n"
@@ -28,6 +29,8 @@ GLfloat* vertices;
 GLuint* indices;
 
 GLuint VAO, VBO, EBO;
+
+
 
 static GLfloat* createVertices(GLint numberOfTriangles, GLfloat radius) {
 	GLfloat twoPi = 2.0f * PI;
@@ -46,6 +49,7 @@ static GLfloat* createVertices(GLint numberOfTriangles, GLfloat radius) {
 	return vertices;
 }
 
+
 GLuint* createIndices(GLint numberOfTriangles) {
 
 	GLuint* indices = new GLuint[numberOfTriangles * 3];
@@ -62,14 +66,17 @@ GLuint* createIndices(GLint numberOfTriangles) {
 }
 
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-	if (yoffset > 0 && numberOfTriangles < 160) {
-		numberOfTriangles += 1;
+
+	if (yoffset > 0 && numberOfTriangles < 180) {
+		numberOfTriangles++;
 	}
 	else if (yoffset < 0 && numberOfTriangles > 0) {
-		numberOfTriangles -= 1;
+		numberOfTriangles--;
 	}
-	printf("Number of triangles: %d\n", numberOfTriangles);
-	vertices = createVertices(numberOfTriangles, 0.8f);
+
+	printf("Ilosc trojkatow: %d\n", numberOfTriangles);
+
+	vertices = createVertices(numberOfTriangles, 0.75f);
 	indices = createIndices(numberOfTriangles);
 
 	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * (numberOfTriangles + 1), vertices, GL_DYNAMIC_DRAW);
@@ -81,7 +88,9 @@ void scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
 }
 
 void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-	GLint uColorLocation = glGetUniformLocation(shaderProgram, "uColor");;
+
+	GLint uColorLocation = glGetUniformLocation(shaderProgram, "uColor");
+
 	if (key == GLFW_KEY_1 && action == GLFW_PRESS) {
 		glUniform3f(uColorLocation, 1.0f, 0.0f, 0.0f);
 	}
@@ -123,8 +132,8 @@ int main()
 	glViewport(0, 0, 800, 800);
 
 
-	//mouse and keyboard
 	glfwSetScrollCallback(window, scrollCallback);
+
 
 	glfwSetKeyCallback(window, keyboardCallback);
 
@@ -158,8 +167,8 @@ int main()
 	glDeleteShader(fragmentShader);
 
 
-	GLfloat radius = 0.8f;
-	numberOfTriangles = 8;
+	GLfloat radius = 0.75f;
+	numberOfTriangles = 12;
 
 	vertices = createVertices(numberOfTriangles, radius);
 
@@ -185,6 +194,7 @@ int main()
 
 	// Configure the Vertex Attribute so that OpenGL knows how to read the VBO
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
 	// Enable the Vertex Attribute so that OpenGL knows to use it
 	glEnableVertexAttribArray(0);
 
@@ -217,6 +227,7 @@ int main()
 	}
 
 	delete[] indices;
+
 	delete[] vertices;
 
 	// Delete all the objects we've created
