@@ -11,9 +11,9 @@
 const GLchar* vertexShaderSource =
 "#version 330 core\n"
 "layout(location = 0) in vec3 position;\n"
-"layout(location = 1) in vec3 color;\n"
 "out vec3 vertexColor;\n"
 "uniform mat4 model;\n"
+"uniform vec3 color;"
 "void main()\n"
 "{\n"
 "    gl_Position = model * vec4(position.x, position.y, position.z, 1.0);\n"
@@ -108,10 +108,10 @@ int main()
 
     // vertex data
     GLfloat vertices[] = {
-        // coordinates          // colors
-         0.0f,  0.2f, 0.0f,     0.0f, 1.0f, 0.0f, // triangle 1,2 vertex 1, 1
-        -0.2f,  0.0f, 0.0f,     0.0f, 1.0f, 0.0f, // triangle 1,2 vertex 2, 3
-         0.2f,  0.0f, 0.0f,     0.0f, 1.0f, 0.0f  // triangle 2   vertex 2
+        // coordinates          
+         0.0f,  0.2f, 0.0f,     
+        -0.2f,  0.0f, 0.0f,     
+         0.2f,  0.0f, 0.0f     
     };
 
     GLuint indices[] = {
@@ -134,8 +134,6 @@ int main()
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
-    glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);
 
@@ -175,10 +173,12 @@ int main()
         model3 = glm::scale(model3, glm::vec3(sin(glfwGetTime()) + 1.2f, sin(glfwGetTime()) + 1.2f, 1.0f));
         model3 = glm::rotate(model3, glm::radians(-degrees), glm::vec3(0.0f, 0.0f, 1.0f));
 
-
+        GLint colorLoc = glGetUniformLocation(shaderProgram, "color");
         GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform3f(colorLoc, 0.0f, 0.0f, 1.0f);
 
+        
         //DEBUG COSINUS std::cout << cos(glfwGetTime()) << std::endl;
 
         glUseProgram(shaderProgram);
@@ -187,6 +187,7 @@ int main()
         glBindVertexArray(0);
 
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model1));
+        glUniform3f(colorLoc, 0.0f, 1.0f, 0.0f);
 
         glUseProgram(shaderProgram);
         glBindVertexArray(VAO);
@@ -194,6 +195,7 @@ int main()
         glBindVertexArray(0);
 
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
+        glUniform3f(colorLoc, 1.0f, 0.0f, 1.0f);
 
         glUseProgram(shaderProgram);
         glBindVertexArray(VAO);
@@ -201,6 +203,7 @@ int main()
         glBindVertexArray(0);
 
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model3));
+        glUniform3f(colorLoc, 1.0f, 1.0f, 1.0f);
 
         glUseProgram(shaderProgram);
         glBindVertexArray(VAO);
