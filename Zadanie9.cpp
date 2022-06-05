@@ -330,6 +330,7 @@ int main()
     // pêtla zdarzeñ
     while (!glfwWindowShouldClose(window))
     {
+        glUseProgram(shaderProgram);
         // renderowanie 1 cube
         glClearColor(0.066f, 0.09f, 0.07f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -392,18 +393,19 @@ int main()
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
 
-        glUseProgram(shaderProgram);
+
 
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 
         // renderowanie 2 cube
+        
         glUseProgram(lightShaderProgram);
 
         model = glm::mat4(1.0f);
         modelLoc = glGetUniformLocation(lightShaderProgram, "model");
-        model = glm::translate(model, glm::vec3((cos(glfwGetTime()) *2), 1.5f, (sin(glfwGetTime()) *2)));
+        model = glm::translate(model, glm::vec3(lightPosition.x, lightPosition.y, lightPosition.z));
         model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
@@ -414,8 +416,7 @@ int main()
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
         
-
-        glBindVertexArray(lightCubeVAO);
+        glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 
