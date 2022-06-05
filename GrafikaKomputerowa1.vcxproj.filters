@@ -21,7 +21,7 @@
     <ClCompile Include="Libraries\include\glm\detail\glm.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Zadanie6.cpp">
+    <ClCompile Include="Zadanie9.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

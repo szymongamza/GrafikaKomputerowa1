@@ -11,16 +11,28 @@
 const GLchar* vertexShaderSource =
 "#version 330 core\n"
 "layout(location = 0) in vec3 position;\n"
-"layout(location = 1) in vec3 color;\n"
-"out vec3 vertexColor;\n"
+"layout(location = 1) in vec3 normal;\n"
+"out vec3 fragmentPosition;\n"
+"out vec3 Normal;\n"
 "uniform mat4 model;\n"
 "uniform mat4 view;\n"
 "uniform mat4 projection;\n"
 "void main()\n"
 "{\n"
-
+"    fragmentPosition = vec3(model* vec4(position,1.0));\n"
+"    Normal = mat3(transpose(inverse(model))) * normal;\n"
 "    gl_Position = projection * view * model * vec4(position, 1.0);\n"
-"    vertexColor = color;\n"
+"}\0";
+
+const GLchar* vertexShaderLightSource =
+"#version 330 core\n"
+"layout(location = 0) in vec3 position;\n"
+"uniform mat4 model;\n"
+"uniform mat4 view;\n"
+"uniform mat4 projection;\n"
+"void main()\n"
+"{\n"
+"    gl_Position = projection * view * model * vec4(position, 1.0);\n"
 "}\0";
 
 const GLchar* fragmentShaderLightSource =
@@ -33,12 +45,22 @@ const GLchar* fragmentShaderLightSource =
 
 const GLchar* fragmentShaderSource =
 "#version 330 core\n"
+"in vec3 Normal;\n"
+"in vec3 fragmentPosition;\n"
 "out vec4 fragmentColor;\n"
-"vec3 objectColor = vec3(0.0, 1.0, 0.0);\n" 
+"uniform vec3 lightPos;\n"
+"vec3 objectColor = vec3(0.0, 1.0, 0.0);\n"
 "vec3 lightColor = vec3(1.0, 1.0, 1.0);\n"
 "void main()\n"
 "{\n"
-"    fragmentColor = vec4(objectColor * lightColor, 1.0);\n"
+"    float ambientStrength = 0.15;\n"
+"    vec3 ambientColor = ambientStrength * lightColor;\n"
+"    vec3 norm = normalize(Normal);\n"
+"    vec3 lightDir = normalize(lightPos - fragmentPosition);\n"
+"    float diff = max(dot(norm, lightDir), 0.0);\n"
+"    vec3 diffuse = diff * lightColor;\n"
+"    vec3 result = (ambientColor + diffuse) * objectColor;\n"
+"    fragmentColor = vec4(result, 1.0);\n"
 "}\0";
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos);
@@ -60,6 +82,7 @@ float deltaTime = 0.0f;
 float previousTime = 0.0f;
 float degrees = 0;
 float deltaMotion = 0.0f;
+glm::vec3 lightPosition(0.0f, 2.0f, 0.0f);
 
 
 int main()
@@ -91,7 +114,6 @@ int main()
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
-
 
     // shadery
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -130,6 +152,17 @@ int main()
         std::cout << "Error (Shader program): " << error_message << std::endl;
     }
 
+    GLuint lightVertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(lightVertexShader, 1, &vertexShaderLightSource, NULL);
+    glCompileShader(lightVertexShader);
+
+    glGetShaderiv(lightVertexShader, GL_COMPILE_STATUS, &status);
+    if (!status)
+    {
+        glGetShaderInfoLog(lightVertexShader, 512, NULL, error_message);
+        std::cout << "Error (Vertex shader): " << error_message << std::endl;
+    }
+
     GLuint lightFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(lightFragmentShader, 1, &fragmentShaderLightSource, NULL);
     glCompileShader(lightFragmentShader);
@@ -142,7 +175,7 @@ int main()
     }
 
     GLuint lightShaderProgram = glCreateProgram();
-    glAttachShader(lightShaderProgram, vertexShader);
+    glAttachShader(lightShaderProgram, lightVertexShader);
     glAttachShader(lightShaderProgram, lightFragmentShader);
     glLinkProgram(lightShaderProgram);
 
@@ -155,10 +188,11 @@ int main()
 
     glDetachShader(shaderProgram, vertexShader);
     glDetachShader(shaderProgram, fragmentShader);   
-    glDetachShader(lightShaderProgram, vertexShader);
+    glDetachShader(lightShaderProgram, lightVertexShader);
     glDetachShader(lightShaderProgram, lightFragmentShader);
 
     glDeleteShader(vertexShader);
+    glDeleteShader(lightVertexShader);
     glDeleteShader(fragmentShader);
     glDeleteShader(lightFragmentShader);
 
@@ -177,53 +211,66 @@ int main()
         0, 3, 1     // triangle 2
     };
     */
-
     GLfloat vertices[] = {
-    -0.5f,  0.5f, -0.5f,
-    -0.5f, -0.5f, -0.5f,
-     0.5f, -0.5f, -0.5f,
-     0.5f,  0.5f, -0.5f,
+        // vertices coords      // normals 
+        -0.5f, -0.5f, -0.5f,    0.0f,  0.0f, -1.0f,
+         0.5f, -0.5f, -0.5f,    0.0f,  0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,    0.0f,  0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,    0.0f,  0.0f, -1.0f,
+        -0.5f,  0.5f, -0.5f,    0.0f,  0.0f, -1.0f,
+        -0.5f, -0.5f, -0.5f,    0.0f,  0.0f, -1.0f,
 
-    -0.5f,  0.5f,  0.5f,
-    -0.5f, -0.5f,  0.5f,
-     0.5f, -0.5f,  0.5f,
-     0.5f,  0.5f,  0.5f,
+        -0.5f, -0.5f,  0.5f,    0.0f,  0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,    0.0f,  0.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,    0.0f,  0.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,    0.0f,  0.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,    0.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,    0.0f,  0.0f, 1.0f,
 
-     0.5f,  0.5f, -0.5f,
-     0.5f, -0.5f, -0.5f,
-     0.5f, -0.5f,  0.5f,
-     0.5f,  0.5f,  0.5f,
+        -0.5f,  0.5f,  0.5f,    -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,    -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,    -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,    -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,    -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,    -1.0f,  0.0f,  0.0f,
 
-    -0.5f,  0.5f, -0.5f,
-    -0.5f, -0.5f, -0.5f,
-    -0.5f, -0.5f,  0.5f,
-    -0.5f,  0.5f,  0.5f,
+         0.5f,  0.5f,  0.5f,    1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,    1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,    1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,    1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,    1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,    1.0f,  0.0f,  0.0f,
 
-    -0.5f, 0.5f,  0.5f, 
-    -0.5f, 0.5f, -0.5f, 
-     0.5f, 0.5f, -0.5f, 
-     0.5f, 0.5f,  0.5f, 
+        -0.5f, -0.5f, -0.5f,    0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,    0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,    0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,    0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,    0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,    0.0f, -1.0f,  0.0f,
 
-    -0.5f, -0.5f,  0.5f,
-    -0.5f, -0.5f, -0.5f,
-     0.5f, -0.5f, -0.5f,
-     0.5f, -0.5f,  0.5f
+        -0.5f,  0.5f, -0.5f,    0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,    0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,    0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,    0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,    0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,    0.0f,  1.0f,  0.0f
     };
 
 
+
     GLuint indices[] = {
-        0,1,3,
-        3,1,2,
-        4,5,7,
-        7,5,6,
-        8,9,11,
-        11,9,10,
-        12,13,15,
-        15,13,14,
-        16,17,19,
-        19,17,18,
-        20,21,23,
-        23,21,22
+        0,1,2,
+        3,4,5,
+        6,7,8,
+        9,10,11,
+        12,13,14,
+        15,16,17,
+        18,19,20,
+        21,22,23,
+        24,25,26,
+        27,28,29,
+        30,31,32,
+        33,34,35
     };
 
     GLuint VAO;
@@ -240,8 +287,10 @@ int main()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)0);
     glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);
     glEnable(GL_DEPTH_TEST);
@@ -258,9 +307,14 @@ int main()
         glClearColor(0.066f, 0.09f, 0.07f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        GLint lightPositionLoc = glGetUniformLocation(shaderProgram, "lightPos");
+        glUniform3f(lightPositionLoc, lightPosition.x, lightPosition.y, lightPosition.z);
+
+
         glm::mat4 model = glm::mat4(1.0f);
 
         GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
+
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
 
@@ -282,41 +336,15 @@ int main()
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
         glUseProgram(shaderProgram);
+
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 
-        //////////////////////////////2 cube
+     
 
-        glm::mat4 model1 = glm::mat4(1.0f);
-
-        GLint modelLoc1 = glGetUniformLocation(lightShaderProgram, "model");
-        model1 = glm::rotate(model1, glm::radians(-45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        glUniformMatrix4fv(modelLoc1, 1, GL_FALSE, glm::value_ptr(model1));
-
-
-        glm::mat4 view1 = glm::lookAt(cameraPosition, cameraPosition + cameraFront, cameraUp);
-
-        GLint viewLoc1 = glGetUniformLocation(lightShaderProgram, "view");
-        glUniformMatrix4fv(viewLoc1, 1, GL_FALSE, glm::value_ptr(view1));
-
-
-        glm::vec3 cameraFront_new1;
-        cameraFront_new1.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-        cameraFront_new1.y = sin(glm::radians(pitch));
-        cameraFront_new1.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-        cameraFront = glm::normalize(cameraFront_new1);
-
-        glm::mat4 projection1 = glm::perspective(glm::radians(45.0f), static_cast<float>(window_width) / static_cast<float>(window_height), 0.1f, 100.0f);
-
-        GLint projectionLoc1 = glGetUniformLocation(lightShaderProgram, "projection");
-        glUniformMatrix4fv(projectionLoc1, 1, GL_FALSE, glm::value_ptr(projection1));
-
-        glUseProgram(lightShaderProgram);
-        glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
-
+        //model = glm::translate(model, glm::vec3((cos(glfwGetTime()) *2), 1.5f, (sin(glfwGetTime()) *2)));
+        //model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
 
         glfwSwapBuffers(window);
         glfwPollEvents();

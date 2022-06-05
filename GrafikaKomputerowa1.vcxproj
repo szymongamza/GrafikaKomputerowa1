@@ -161,7 +161,7 @@
   <ItemGroup>
     <ClCompile Include="glad.c" />
     <ClCompile Include="Libraries\include\glm\detail\glm.cpp" />
-    <ClCompile Include="Zadanie6.cpp" />
+    <ClCompile Include="Zadanie9.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="Libraries\lib\glfw3.lib" />
