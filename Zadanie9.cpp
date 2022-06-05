@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <sstream>
 
 
 const GLchar* vertexShaderSource =
@@ -49,22 +50,30 @@ const GLchar* fragmentShaderSource =
 "in vec3 fragmentPosition;\n"
 "out vec4 fragmentColor;\n"
 "uniform vec3 lightPos;\n"
+"uniform vec3 viewPos;\n"
+"uniform float ambientStrength;\n"
+"uniform float specularStrength;\n"
+"uniform float diffuseStrength;\n"
 "vec3 objectColor = vec3(0.0, 1.0, 0.0);\n"
 "vec3 lightColor = vec3(1.0, 1.0, 1.0);\n"
 "void main()\n"
 "{\n"
-"    float ambientStrength = 0.15;\n"
 "    vec3 ambientColor = ambientStrength * lightColor;\n"
 "    vec3 norm = normalize(Normal);\n"
 "    vec3 lightDir = normalize(lightPos - fragmentPosition);\n"
 "    float diff = max(dot(norm, lightDir), 0.0);\n"
-"    vec3 diffuse = diff * lightColor;\n"
-"    vec3 result = (ambientColor + diffuse) * objectColor;\n"
+"    vec3 diffuse = diff * lightColor * diffuseStrength;\n"
+"    vec3 viewDir = normalize(viewPos - fragmentPosition);\n"
+"    vec3 reflectDir = reflect(-lightDir, norm);\n"
+"    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 64);\n"
+"    vec3 specular = specularStrength * spec * lightColor;\n"
+"    vec3 result = (ambientColor + diffuse + specular) * objectColor;\n"
 "    fragmentColor = vec4(result, 1.0);\n"
 "}\0";
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void TitleWindow(GLFWwindow* window);
 
 float pitch = 0.0f;
 float yaw = -90.0f;
@@ -83,6 +92,10 @@ float previousTime = 0.0f;
 float degrees = 0;
 float deltaMotion = 0.0f;
 glm::vec3 lightPosition(0.0f, 2.0f, 0.0f);
+
+bool ambient = true;
+bool diffuse = true;
+bool spec = true;
 
 
 int main()
@@ -152,6 +165,13 @@ int main()
         std::cout << "Error (Shader program): " << error_message << std::endl;
     }
 
+    glDetachShader(shaderProgram, vertexShader);
+    glDetachShader(shaderProgram, fragmentShader);
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+    /// <summary>
+    /// </summary>
+    /// <returns></returns>
     GLuint lightVertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(lightVertexShader, 1, &vertexShaderLightSource, NULL);
     glCompileShader(lightVertexShader);
@@ -186,14 +206,13 @@ int main()
         std::cout << "Error (Shader program): " << error_message << std::endl;
     }
 
-    glDetachShader(shaderProgram, vertexShader);
-    glDetachShader(shaderProgram, fragmentShader);   
+
     glDetachShader(lightShaderProgram, lightVertexShader);
     glDetachShader(lightShaderProgram, lightFragmentShader);
 
-    glDeleteShader(vertexShader);
+
+
     glDeleteShader(lightVertexShader);
-    glDeleteShader(fragmentShader);
     glDeleteShader(lightFragmentShader);
 
     /*
@@ -292,6 +311,14 @@ int main()
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
     glEnableVertexAttribArray(1);
 
+    GLuint lightCubeVAO;
+    glGenVertexArrays(1, &lightCubeVAO);
+    glBindVertexArray(lightCubeVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
     glBindVertexArray(0);
     glEnable(GL_DEPTH_TEST);
 
@@ -308,7 +335,36 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         GLint lightPositionLoc = glGetUniformLocation(shaderProgram, "lightPos");
+        glm::vec3 lightPosition((cos(glfwGetTime()) * 3), 2.0f, (sin(glfwGetTime()) * 3));
         glUniform3f(lightPositionLoc, lightPosition.x, lightPosition.y, lightPosition.z);
+
+
+        GLint cameraPositionLoc = glGetUniformLocation(shaderProgram, "viewPos");
+        glUniform3f(cameraPositionLoc, cameraPosition.x, cameraPosition.y, cameraPosition.z);
+
+        GLint diffuseLoc = glGetUniformLocation(shaderProgram, "diffuseStrength");
+        if (diffuse) {
+            glUniform1f(diffuseLoc, 1.0f);
+        }
+        else {
+            glUniform1f(diffuseLoc, 0.0f);
+        }
+        GLint ambientLoc = glGetUniformLocation(shaderProgram, "ambientStrength");
+        if (ambient) {
+            glUniform1f(ambientLoc, 0.15f);
+        }
+        else {
+            glUniform1f(ambientLoc, 0.0f);
+        }
+        GLint specularLoc = glGetUniformLocation(shaderProgram, "specularStrength");
+        if (spec) {
+            glUniform1f(specularLoc, 0.4f);
+        }
+        else {
+            glUniform1f(specularLoc, 0.0f);
+        }
+
+
 
 
         glm::mat4 model = glm::mat4(1.0f);
@@ -335,13 +391,35 @@ int main()
         GLint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
+
         glUseProgram(shaderProgram);
 
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 
-     
+        // renderowanie 2 cube
+        glUseProgram(lightShaderProgram);
+
+        model = glm::mat4(1.0f);
+        modelLoc = glGetUniformLocation(lightShaderProgram, "model");
+        model = glm::translate(model, glm::vec3((cos(glfwGetTime()) *2), 1.5f, (sin(glfwGetTime()) *2)));
+        model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+        viewLoc = glGetUniformLocation(lightShaderProgram, "view");
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+
+        projectionLoc = glGetUniformLocation(lightShaderProgram, "projection");
+        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+        
+
+        glBindVertexArray(lightCubeVAO);
+        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+
+        
 
         //model = glm::translate(model, glm::vec3((cos(glfwGetTime()) *2), 1.5f, (sin(glfwGetTime()) *2)));
         //model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
@@ -351,6 +429,7 @@ int main()
         float currentTime = glfwGetTime();
         deltaTime = currentTime - previousTime;
         previousTime = currentTime;
+        TitleWindow(window);
     }
 
     glDeleteVertexArrays(1, &VAO);
@@ -390,4 +469,22 @@ void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) cameraPosition -= cameraSpeed * cameraFront;
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) cameraPosition -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) cameraPosition += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    if (key == GLFW_KEY_1 && action == GLFW_PRESS) {
+        ambient = !ambient;
+    }
+    if (key == GLFW_KEY_2 && action == GLFW_PRESS) {
+        diffuse = !diffuse;
+    }
+    if (key == GLFW_KEY_3 && action == GLFW_PRESS) {
+        spec = !spec;
+    }
+}
+
+void TitleWindow(GLFWwindow* window) {
+    std::ostringstream ss;
+    ss << "ambient: " << ambient << " diffuse: " << diffuse << " spec: " << spec;
+    std::string s(ss.str());
+
+    const char* c = s.c_str();
+    glfwSetWindowTitle(window, c);
 }
